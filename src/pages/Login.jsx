@@ -20,7 +20,9 @@ const Login = () => {
         setLoggedIn(true); // Set session state
         navigate("/feed");
       } catch {
-        console.log("No active session");
+         console.log("❌ Not logged in or session broken");
+    await account.deleteSessions().catch(() => {}); // Clean up broken session
+    navigate("/login");
       }
     };
     checkSession();
@@ -36,8 +38,6 @@ const Login = () => {
     try {
       //  Only runs if no session
       await account.createEmailPasswordSession(email, pass);
-      console.log("Logged in successfully");
-
       const user = await account.get();
       const userId = user.$id;
 
