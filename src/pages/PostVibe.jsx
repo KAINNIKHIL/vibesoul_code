@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toast } from 'react-toastify';
 import { databases, storage, IDUtils, account } from "../appwrite/config";
 
 const PostVibe = () => {
@@ -36,12 +37,11 @@ const PostVibe = () => {
         }
       );
 
-      alert("Vibe posted! 🚀");
+      toast.success("Vibe posted!");
       setVibe("");
       setImage(null);
     } catch (err) {
-      console.error("Error posting vibe 💔", err);
-      alert("Something went wrong...");
+      toast.error("Error posting vibe: " + err.message);
     }
 
     setLoading(false);

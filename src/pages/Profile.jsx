@@ -87,89 +87,90 @@ const UserProfile = () => {
   
 
   
-  return (
-    <div className="max-w-3xl mx-auto p-6 bg-white dark:bg-gray-900 text-black dark:text-white rounded-lg">
-      {/* Basic Info */}
-
-
-     
-
-
-
-
-      <div className="flex items-center gap-4 mb-6">
-     
-     
-
-        <img
-          src={userProfile?.profilePicUrl || "/default-avatar.png"}
-          alt="Profile"
-          className="w-20 h-20 rounded-full object-cover border"
-        />
-        <div>
-          <h1 className="text-xl font-semibold">{user.name || user.email}</h1>
-          {userProfile?.mbtiType && (
-            <p className="text-sm text-gray-500 dark:text-gray-300">MBTI: {userProfile.mbtiType.toUpperCase()}</p>
-          )}
-        </div>
-        <div className="flex gap-4 mt-2 text-sm text-gray-500 dark:text-gray-300">
-  <Link to={`/profile/${user.$id}/followers`} className="hover:underline">
-    <span className="font-semibold no-underline">{followersCount}</span> Followers
-  </Link>
-  <Link to={`/profile/${user.$id}/following`} className="hover:underline">
-    <span className="font-semibold">{followingCount}</span> Following
-  </Link>
-</div>
-
-
-<div className="ml-auto flex flex-col sm:flex-row gap-2 sm:gap-x-2">
-  <Link
-    to="/edit-profile"
-    className="flex items-center justify-center gap-1 bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-lg text-sm font-medium text-white"
-  >
-    <Pencil className="w-4 h-4" />
-    
-  </Link>
-  <Link
-    to="/post"
-    className="flex items-center justify-center gap-1 bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-lg text-sm font-medium text-white"
-  >
-    <Send className="w-4 h-4" />
-  
-  </Link>
-</div>
-
-      </div>
-      {userProfile?.bio && (
-  <h2 className="mt-2 text-sm text-gray-600 dark:text-gray-400 italic">
-    {userProfile.bio}
-  </h2>
-)}
-
-
-      {/* Stats */}
-      <div className="mb-6">
-        <h1 className="text-lg font-medium">Vibes: {vibes.length}</h1>
-      </div>
-
-      {/* Vibes List */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {vibes.map((vibe) => (
-          <div key={vibe.$id} className="p-4 border dark:border-gray-700 rounded-lg">
-            <p>{vibe.vibeText}</p>
-            {vibe.imageUrl && (
-        <img
-          src={vibe.imageUrl}
-          alt="vibe-img"
-          className="mt-4 rounded-xl max-h-80 w-full border border-white/10"
-        />
-      )}
-            <span className="text-sm text-gray-500">{new Date(vibe.$createdAt).toLocaleString()}</span>
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-6 bg-white dark:bg-gray-900 text-black dark:text-white rounded-lg">
+        {/* Basic Info */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          {/* Left: Profile pic & info */}
+          <div className="flex items-center gap-4">
+            <img
+              src={userProfile?.profilePicUrl || "/default-avatar.png"}
+              alt="Profile"
+              className="w-20 h-20 rounded-full object-cover border"
+            />
+            <div>
+              <h1 className="text-xl font-semibold">{user.name || user.email}</h1>
+              {userProfile?.mbtiType && (
+                <p className="text-sm text-gray-500 dark:text-gray-300">
+                  MBTI: {userProfile.mbtiType.toUpperCase()}
+                </p>
+              )}
+            </div>
           </div>
-        ))}
+    
+          {/* Right: Edit & Post buttons */}
+          <div className="flex flex-wrap sm:flex-nowrap gap-2">
+            <Link
+              to="/edit-profile"
+              className="flex items-center justify-center gap-1 bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-lg text-sm font-medium text-white"
+            >
+              <Pencil className="w-4 h-4" />
+              Edit
+            </Link>
+            <Link
+              to="/post"
+              className="flex items-center justify-center gap-1 bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-lg text-sm font-medium text-white"
+            >
+              <Send className="w-4 h-4" />
+              Post
+            </Link>
+          </div>
+        </div>
+    
+        {/* Bio */}
+        {userProfile?.bio && (
+          <p className="mb-4 text-sm text-gray-600 dark:text-gray-400 italic">
+            {userProfile.bio}
+          </p>
+        )}
+    
+        {/* Follower / Following */}
+        <div className="flex gap-6 text-sm text-gray-600 dark:text-gray-300 mb-4">
+          <Link to={`/profile/${user.$id}/followers`} className="hover:underline">
+            <span className="font-semibold">{followersCount}</span> Followers
+          </Link>
+          <Link to={`/profile/${user.$id}/following`} className="hover:underline">
+            <span className="font-semibold">{followingCount}</span> Following
+          </Link>
+        </div>
+    
+        {/* Stats */}
+        <div className="mb-6">
+          <h2 className="text-lg font-medium">Vibes: {vibes.length}</h2>
+        </div>
+    
+        {/* Vibes List */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {vibes.map((vibe) => (
+            <div
+              key={vibe.$id}
+              className="p-4 border dark:border-gray-700 rounded-lg"
+            >
+              <p>{vibe.vibeText}</p>
+              {vibe.imageUrl && (
+                <img
+                  src={vibe.imageUrl}
+                  alt="vibe-img"
+                  className="mt-4 rounded-xl max-h-80 w-full border border-white/10 object-cover"
+                />
+              )}
+              <span className="text-sm text-gray-500 block mt-2">
+                {new Date(vibe.$createdAt).toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
-  );
-};
-
+    )};
+    
 export default UserProfile;

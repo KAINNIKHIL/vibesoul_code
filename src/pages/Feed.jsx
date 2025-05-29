@@ -9,7 +9,6 @@ import { createCommentNotification } from "../lib/notifications";
 import { createFollowNotification } from "../lib/notifications";
 
 
-
 const Feed = () => {
   const [vibes, setVibes] = useState([]);
   const [commentUserProfilesMap, setCommentUserProfilesMap] = useState({});
@@ -18,8 +17,10 @@ const Feed = () => {
   const [commentsCountMap, setCommentsCountMap] = useState({});
   const [showComments, setShowComments] = useState({});
   const [userProfilesMap, setUserProfilesMap] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = useState("same-mbti");
-  const { user } = useUser();
+  const { user, userId } = useUser(); // include userId from hook
+
 
   const fetchUserProfiles = async () => {
     try {
@@ -42,35 +43,71 @@ const Feed = () => {
   
 
   const fetchVibes = async () => {
-    try {
-      const res = await databases.listDocuments(
+  setIsLoading(true);
+  try {
+    let response;
+    
+    // Fetch vibes based on filter
+    if (filter === "same-mbti" && userId) {
+      // Fetch all vibes
+      response = await databases.listDocuments(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
-        import.meta.env.VITE_APPWRITE_COLLECTION_ID
+        import.meta.env.VITE_APPWRITE_COLLECTION_ID,
+        [Query.orderDesc("$createdAt")]
       );
-  
-      let filteredVibes = res.documents;
-  
-      if (filter === "same-mbti" && currentUserId) {
-        const currentUserProfile = userProfilesMap[currentUserId];
-        if (currentUserProfile?.mbtiType) {
-          filteredVibes = filteredVibes.filter((v) => {
-            const authorProfile = userProfilesMap[v.userId];
-            return authorProfile?.mbtiType === currentUserProfile.mbtiType;
-          });
-        }
-      }
-      
-  
-      const sorted = filteredVibes.sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-      );
+      // Get the current user's MBTI type
+      const currentUserProfile = userProfilesMap[userId];
+      const currentMBTI = currentUserProfile?.mbtiType;
 
-      setVibes(sorted);
-    } catch (error) {
-      console.error("Failed to fetch vibes ", error);
+      if (currentMBTI) {
+        // Filter vibes locally by MBTI type
+        response.documents = response.documents.filter((v) => {
+          const authorProfile = userProfilesMap[v.userId];
+          return authorProfile?.mbtiType === currentMBTI;
+        });
+      }
+
+    } else {
+      // For other filters, fetch all vibes without additional filtering
+      response = await databases.listDocuments(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        import.meta.env.VITE_APPWRITE_COLLECTION_ID,
+        [Query.orderDesc("$createdAt")]
+      );
     }
-  };
-  
+
+    let vibesData = response.documents;
+    
+    // Fetch user profiles if they are not loaded yet
+    if (filter === "same-mbti" && userId && userProfilesMap[userId]) {
+      const currentUserProfile = userProfilesMap[userId];
+      
+      if (currentUserProfile?.mbtiType) {
+        // Make sure all author profiles are available before filtering vibes
+        const missingUserIds = vibesData
+          .map((v) => v.userId)
+          .filter((id) => !userProfilesMap[id]);
+
+        if (missingUserIds.length > 0) {
+          console.log("Fetching missing profiles:", missingUserIds);
+          await fetchUserProfiles(); // Refetch or merge missing profiles
+        }
+
+        // Now filter vibes based on the MBTI type
+        vibesData = vibesData.filter((v) => {
+          const authorProfile = userProfilesMap[v.userId];
+          return authorProfile?.mbtiType === currentUserProfile.mbtiType;
+        });
+      }
+    }
+
+    setVibes(vibesData);
+  } catch (error) {
+    console.error("Failed to fetch vibes:", error);
+  }
+  setIsLoading(false);
+};
+
     
 
   const handleLike = async (vibe) => {
@@ -272,13 +309,19 @@ await createCommentNotification(receiverId, senderId, vibeId);
     fetchUserProfiles();
   }, []);
   
-  useEffect(() => {
-    if (user && Object.keys(userProfilesMap).length > 0 && currentUserId) {
-      fetchVibes();
-      fetchComments();
-    }
-  }, [filter, user, userProfilesMap, currentUserId]);
-  
+ useEffect(() => {
+  if (
+    user &&
+    currentUserId &&
+    userProfilesMap &&
+    Object.keys(userProfilesMap).length > 0 &&
+    userProfilesMap[currentUserId]
+  ) {
+    fetchVibes();
+    fetchComments();
+  }
+}, [filter, user, userProfilesMap, currentUserId]);
+
   
   return (
     
@@ -305,20 +348,22 @@ await createCommentNotification(receiverId, senderId, vibeId);
       return (
         
         <VibeCard
-          key={vibe.$id}
-          vibe={vibe}
-          currentUserId={currentUserId}
-          commentInput={commentInput}
-          commentsMap={commentsMap}
-          showComments={showComments}
-          handleLike={handleLike}
-          handleCommentSubmit={(e) => handleCommentSubmit(e, vibe.$id)}
-          handleCommentChange={handleCommentChange}
-          setShowComments={setShowComments}
-          commentCount={commentsCountMap[vibe.$id] || 0}
-          userProfile={userProfile} 
-          commentUserProfilesMap={commentUserProfilesMap}
-        />
+  key={vibe.$id}
+  vibe={vibe}
+  currentUserId={userId}
+  commentInput={commentInput}
+  commentsMap={commentsMap}
+  showComments={showComments}
+  handleLike={handleLike}
+  handleCommentSubmit={(e) => handleCommentSubmit(e, vibe.$id)}
+  handleCommentChange={handleCommentChange}
+  setShowComments={setShowComments}
+  commentCount={commentsCountMap[vibe.$id] || 0}
+  commentUserProfilesMap={commentUserProfilesMap}
+  userProfile={userProfile}
+  onFollow={handleFollow}
+/>
+
       );
     })}
   

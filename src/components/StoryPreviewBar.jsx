@@ -82,7 +82,6 @@ const StoryPreviewBar = ({ onStoryClick }) => {
       key={userStory.userId}
       className="flex flex-col items-center cursor-pointer"
       onClick={() => {
-        console.log("You clicked:", userStory.username);
         onStoryClick({...userStory,
           currentIndex: 0,});
       }}

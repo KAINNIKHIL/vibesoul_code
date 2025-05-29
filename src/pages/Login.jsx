@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, {  useEffect,useState } from "react";
 import { account, databases, IDUtils } from "../appwrite/config";
 import { useNavigate } from "react-router-dom";
 import { Query } from "appwrite";
@@ -8,53 +8,66 @@ import { Link } from "react-router-dom";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
+  const [loggedIn, setLoggedIn] = useState(false); // New state
   const navigate = useNavigate();
+
+  // On mount, check session
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const user = await account.get();
+        console.log("User already logged in:", user);
+        setLoggedIn(true); // Set session state
+        navigate("/feed");
+      } catch {
+        console.log("No active session");
+      }
+    };
+    checkSession();
+  }, []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (loggedIn) {
+      toast.info("You're already logged in!");
+      return navigate("/feed");
+    }
+
     try {
-      //Login
+      //  Only runs if no session
       await account.createEmailPasswordSession(email, pass);
       console.log("Logged in successfully");
-  
-      //Get user info
+
       const user = await account.get();
       const userId = user.$id;
-  
-      //Check if profile exists
+
       const response = await databases.listDocuments(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
         import.meta.env.VITE_APPWRITE_USERPROFILES_COLLECTION_ID,
         [Query.equal("userId", userId)]
       );
-  
+
       if (response.total === 0) {
-        //Create profile if not exists
-        const dbId = import.meta.env.VITE_APPWRITE_DATABASE_ID;
-        const collectionId = import.meta.env.VITE_APPWRITE_USERPROFILES_COLLECTION_ID;
-
-await databases.createDocument(
-  dbId,
-  collectionId,
-  IDUtils.unique(),
-  {
-    userId: userId,
-    email: user.email,
-    username: user.name,
-    mbtiType: "",
-    profilePic: "",
-    createdAt: new Date().toISOString(),
-  }
-);
-
-        
-
-        console.log("User profile created 📄");
+        await databases.createDocument(
+          import.meta.env.VITE_APPWRITE_DATABASE_ID,
+          import.meta.env.VITE_APPWRITE_USERPROFILES_COLLECTION_ID,
+          IDUtils.unique(),
+          {
+            userId: userId,
+            email: user.email,
+            username: user.name,
+            mbtiType: "",
+            profilePicUrl: "",
+            createdAt: new Date().toISOString(),
+          }
+        );
+        console.log("User profile created ");
       } else {
         console.log("User profile already exists");
       }
-  
+
+      toast.success("Login successful!");
       navigate("/feed");
-  
     } catch (err) {
       toast.error("Login failed: " + err.message);
     }
