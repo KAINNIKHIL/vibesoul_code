@@ -1,0 +1,14 @@
+/*@tailwind preflight;
+@tailwind components;
+@tailwind utilities;*/
+
+@import "tailwindcss/preflight";
+@import "tailwindcss/utilities";
+
+@import "tailwindcss";
+html,
+body,
+#root {
+  height: 100%;
+  text-decoration: none;
+}
