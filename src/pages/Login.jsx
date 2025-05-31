@@ -5,61 +5,53 @@ import { Query } from "appwrite";
 import { toast } from 'react-toastify';
 import { Link } from "react-router-dom";
 
-
 const Login = () => {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
-  const [checkingSession, setCheckingSession] = useState(true);
+  const [loggedIn, setLoggedIn] = useState(false); // New state
   const navigate = useNavigate();
 
+  // On mount, check session
   useEffect(() => {
     const checkSession = async () => {
       try {
         const user = await account.get();
-        console.log("✅ Already logged in:", user);
+        console.log("User already logged in:", user);
+        setLoggedIn(true); // Set session state
         navigate("/feed");
-      } catch (err) {
-        if (err.type === "user_session_not_found") {
-          console.log("⚠️ No session found");
-        } else {
-          console.log("⚠️ Session error:", err.message);
-        }
-
-        // Optional: Clean up broken sessions
-        await account.deleteSessions().catch(() => {});
-        setCheckingSession(false); // Done checking, allow login
+      } catch {
+        console.log("No active session");
       }
     };
-
     checkSession();
   }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (loggedIn) {
+      toast.info("You're already logged in!");
+      return navigate("/feed");
+    }
 
     try {
-      // 1. Create session
-      await account.createEmailSession(email, pass);
-
-      // 2. Get user details
+      //  Only runs if no session
+      await account.createEmailPasswordSession(email, pass);
       const user = await account.get();
       const userId = user.$id;
 
-      // 3. Check if user profile exists
       const response = await databases.listDocuments(
         import.meta.env.VITE_APPWRITE_DATABASE_ID,
         import.meta.env.VITE_APPWRITE_USERPROFILES_COLLECTION_ID,
         [Query.equal("userId", userId)]
       );
 
-      // 4. Create user profile if not exists
       if (response.total === 0) {
         await databases.createDocument(
           import.meta.env.VITE_APPWRITE_DATABASE_ID,
           import.meta.env.VITE_APPWRITE_USERPROFILES_COLLECTION_ID,
           IDUtils.unique(),
           {
-            userId,
+            userId: userId,
             email: user.email,
             username: user.name,
             mbtiType: "",
@@ -67,22 +59,18 @@ const Login = () => {
             createdAt: new Date().toISOString(),
           }
         );
-        console.log("🆕 User profile created");
+        console.log("User profile created ");
       } else {
-        console.log("✅ User profile already exists");
+        console.log("User profile already exists");
       }
 
       toast.success("Login successful!");
       navigate("/feed");
     } catch (err) {
-      console.error("❌ Login error:", err);
       toast.error("Login failed: " + err.message);
     }
   };
-
-  if (checkingSession) {
-    return <div className="text-center mt-10">Checking session...</div>;
-  }
+  
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500">
